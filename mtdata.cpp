@@ -8,6 +8,10 @@ void addArtist(string artist, string& command) {
 	command = command + "-metadata artist=\"" + artist + "\" ";
 }
 
+void addTrackNumber(string tracknumber, string numTracks, string& command) {
+	command = command + "-metadata track=\"" + tracknumber + "/" + numTracks + "\" ";
+}
+
 void addAlbum(string album, string& command) {
 	command = command + "-metadata album=\"" + album + "\" ";
 }
@@ -119,6 +123,7 @@ void setAlbum() {
 	cout << "Enter date: ";
 	cin.getline(date, sizeof(date));
 
+	// Check that the information entered is correct
 	cout << "\nThese are the files you entered:\n";
 	for (int i = 0, c = files.size(); i < c; i++) {
 		cout << files[i] << endl;
@@ -160,6 +165,7 @@ void setAlbum() {
 
 	cout << endl;
 	for (int i = 0; i < numTracks; i++) {
+		addTrackNumber(to_string(i+1), to_string(numTracks), command);
 		string _temp = command;
 		_temp.insert(12, to_string(i) + ".mp3 ");
 		_temp = _temp + "\"" + files[i] + "\"";
