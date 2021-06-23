@@ -4,6 +4,24 @@
 #include <string>
 using namespace std;
 
+bool confirmation() {
+	cout << "Does this look right? (Y/n)";
+	char confirm[2];
+	cin.getline(confirm, 2);
+
+	if (confirm == "n") {
+		cout << "Ok, run this program again then.\n";
+		return false;
+	} else return true;
+}
+
+void rename(int n, string filename) {
+	string _mkbuffer = "mv ";
+	_mkbuffer = _mkbuffer + "\"" + filename + "\" in" + to_string(n) + ".mp3";
+	const char *mkBuffer = _mkbuffer.c_str();
+	system(mkBuffer);
+}
+
 void addArtist(string artist, string& command) {
 	command = command + "-metadata artist=\"" + artist + "\" ";
 }
@@ -28,73 +46,36 @@ void addDate(string date, string& command) {
 	command = command + "-metadata date=\"" + date + "\" ";
 }
 
-void setAlbum();
+void getAlbum(char album[], int size) {
+	cout << "Enter album name: ";
+	cin.getline(album, size);
+}
 
-int main (int argc, char *argv[]) {
-	// Detect Errors
-	if (argc != 2) {
-		cout << "Usage: mtdata [options] [filename]\n";
-		cout << "Use --album to add artist, album, date to multiple files\n";
-		return 0;
-	}
-	
-	// Check for --album tag
-	string albinput = "--album";
-	string argument2 = argv[1];
+void getArtist(char artist[], int size) {
+	cout << "Enter artist name: ";
+	cin.getline(artist, size);
+}
 
-	if (argument2 == albinput) {
-		setAlbum();
-		return 0;
-	}
+void getDate(char date[], int size) {
+	cout << "Enter date name: ";
+	cin.getline(date, size);
+}
 
-	string filename = argv[1];
-	
-	// Initialize ffmpeg command
-	string str = "ffmpeg -i in.mp3 ";
-
-	// Change the name of the input file to in.mp3
-	// because ffmpeg creates a new file from the old file
-	string _mkbuffer = "mv ";
-	_mkbuffer = _mkbuffer + filename + " in.mp3";
-	const char *mkBuffer = _mkbuffer.c_str();
-	system(mkBuffer);
-
-	// Make variables for metadata
-	char album[50];
-	char artist[50];
-	char title[50];
-	char date[5];
-	cout << "Enter artist: ";
-	cin.getline(artist, sizeof(artist));
-	cout << "Enter album: ";
-	cin.getline(album, sizeof(album));
+void getTitle(char title[], int size) {
 	cout << "Enter title: ";
-	cin.getline(title, sizeof(title));
-	cout << "Enter date: ";
-	cin.getline(date, sizeof(date));
+	cin.getline(title, size);
+}
 
-	// Add metadata to ffmpeg command	
-	addArtist(artist, str);
-	addAlbum(album, str);	
-	addTitle(title, str);
-	addDate(date, str);
-	addOutput(filename, str);
-
-	// Convert to c_str and execute ffmpeg command
-	const char *command = str.c_str();
-	system(command);
-	
-	// Clean up
-	system("rm in.mp3");
-
-	return 0;	
+void getFileName(char filename[], int size) {
+	cout << "Enter file name: ";
+	cin.getline(filename, size);
 }
 
 void setAlbum() {
 	// Create metadata holders
 	vector<string> files;
-	char album[50];
-	char artist[50];
+	char album[128];
+	char artist[128];
 	char date[5];
 
 	// Find out how many songs are in the album
@@ -106,22 +87,18 @@ void setAlbum() {
 	// Get the names for the files
 	// and add them to the list of files
 	string buffer;
-	char fileNameBuffer[50];
+	char fileNameBuffer[128];
 	for (int i = 0; i < numTracks; i++) {
-		cout << "Enter file name: ";
-		cin.getline(fileNameBuffer, sizeof(fileNameBuffer));
+		getFileName(fileNameBuffer, sizeof(fileNameBuffer));
 		buffer = fileNameBuffer;
 		files.push_back(buffer);
 	}
 	cout << endl;
 
 	// Acquire metadata
-	cout << "Enter album name: ";
-	cin.getline(album, sizeof(album));
-	cout << "Enter artist: ";
-	cin.getline(artist, sizeof(artist));
-	cout << "Enter date: ";
-	cin.getline(date, sizeof(date));
+	getAlbum(album, sizeof(album));
+	getArtist(artist, sizeof(artist));
+	getDate(date, 5);
 
 	// Check that the information entered is correct
 	cout << "\nThese are the files you entered:\n";
@@ -133,25 +110,12 @@ void setAlbum() {
 	cout << "Album: " << album << endl;
 	cout << "Date: " << date << endl << endl;
 
-	cout << "Does this look right? (Y/n) ";
-	char confirm[2];
-	cin.getline(confirm, 2);
-
-	if (confirm == "n") {
-		cout << "Ok, run this program again then.\n";
-		return;
-	}
+	if (!confirmation()) return;	
 
 	// Rename the files to inX.mp3 where X is a number
-	string _mkbuffer = "mv \"";
-
 	cout << endl;
 	for (int i = 0; i < numTracks; i++) {
-		_mkbuffer = _mkbuffer + files[i] + "\" in" + to_string(i) + ".mp3";
-		cout << _mkbuffer << endl;
-		const char *mkBuffer = _mkbuffer.c_str();
-		system(mkBuffer);
-		_mkbuffer = "mv \"";
+		rename(i, files[i]);
 	}
 
 	// Make list of ffmpeg commands to actually change the metadata
@@ -178,4 +142,57 @@ void setAlbum() {
 		string remove = "rm in" + to_string(i) + ".mp3";
 		system(remove.c_str());
 	}
+}
+
+int main (int argc, char *argv[]) {
+	// Detect Errors
+	if (argc != 2) {
+		cout << "Usage: mtdata [options] [filename]\n";
+		cout << "Use --album to add artist, album, date to multiple files\n";
+		return 0;
+	}
+	
+	// Check for --album tag
+	string albinput = "--album";
+	string argument2 = argv[1];
+
+	if (argument2 == albinput) {
+		setAlbum();
+		return 0;
+	}
+
+	string filename = argv[1];
+	
+	// Initialize ffmpeg command
+	string str = "ffmpeg -i in.mp3 ";
+
+	// Change the name of the input file to in.mp3
+	// because ffmpeg creates a new file from the old file
+	rename(0, filename);
+
+	// Make variables for metadata
+	char album[128];
+	char artist[128];
+	char title[128];
+	char date[5];
+	getAlbum(album, sizeof(album));
+	getArtist(artist, sizeof(artist));
+	getDate(date, 5);
+	getTitle(title, sizeof(title));
+	
+	// Add metadata to ffmpeg command	
+	addArtist(artist, str);
+	addAlbum(album, str);	
+	addTitle(title, str);
+	addDate(date, str);
+	addOutput(filename, str);
+
+	// Convert to c_str and execute ffmpeg command
+	const char *command = str.c_str();
+	system(command);
+	
+	// Clean up
+	system("rm in.mp3");
+
+	return 0;	
 }
